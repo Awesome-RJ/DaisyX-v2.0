@@ -86,10 +86,11 @@ async def close_ws(event):
 
 @register(pattern="^/enlydia$")
 async def _(event):
-    if event.is_group:
-        if not await can_change_info(message=event):
-            return
-    else:
+    if (
+        event.is_group
+        and not await can_change_info(message=event)
+        or not event.is_group
+    ):
         return
     global api_client
     chat = event.chat
@@ -102,11 +103,11 @@ async def _(event):
         ses_id = str(ses.id)
         expires = str(ses.expires)
         sql.set_ses(chat.id, ses_id, expires)
-        if not event.chat_id in en_chats:
+        if event.chat_id not in en_chats:
             en_chats.append(event.chat_id)
         await event.reply("English AI successfully enabled for this chat!")
         return
-    if not event.chat_id in en_chats:
+    if event.chat_id not in en_chats:
         en_chats.append(event.chat_id)
         await event.reply("English only AI activated!")
     await event.reply("AI is already enabled for this chat!")
@@ -115,10 +116,11 @@ async def _(event):
 
 @register(pattern="^/addlydia$")
 async def _(event):
-    if event.is_group:
-        if not await can_change_info(message=event):
-            return
-    else:
+    if (
+        event.is_group
+        and not await can_change_info(message=event)
+        or not event.is_group
+    ):
         return
     global api_client
     chat = event.chat
@@ -140,10 +142,11 @@ async def _(event):
 
 @register(pattern="^/rmlydia$")
 async def _(event):
-    if event.is_group:
-        if not await can_change_info(message=event):
-            return
-    else:
+    if (
+        event.is_group
+        and not await can_change_info(message=event)
+        or not event.is_group
+    ):
         return
     chat = event.chat
     send = await event.get_sender()
@@ -160,26 +163,21 @@ async def _(event):
 
 @tbot.on(events.NewMessage(pattern=None))
 async def check_message(event):
-    if event.is_group:
-        pass
-    else:
+    if not event.is_group:
         return
     message = str(event.text)
     reply_msg = await event.get_reply_message()
     if message.lower() == "daizy":
         return True
-    if reply_msg:
-        if reply_msg.sender_id == BOT_ID:
-            return True
-    else:
+    if not reply_msg:
         return False
+    if reply_msg.sender_id == BOT_ID:
+        return True
 
 
 @tbot.on(events.NewMessage(pattern=None))
 async def _(event):
-    if event.is_group:
-        pass
-    else:
+    if not event.is_group:
         return
     global api_client
     msg = str(event.text)
@@ -241,7 +239,7 @@ async def _(event):
                 lan = translator.detect(rm)
             msg = rm
             test = msg
-            if not "en" in lan and not lan == "":
+            if "en" not in lan and lan != "":
                 msg = translator.translate(test, lang_tgt="en")
             sesh, exp = sql.get_ses(chat.id)
             query = msg
@@ -257,18 +255,14 @@ async def _(event):
             try:
                 rep = api_client.think_thought(sesh, query)
                 pro = rep
-                if not "en" in lan and not lan == "":
+                if "en" not in lan and lan != "":
                     pro = translator.translate(rep, lang_tgt=lan[0])
                 if event.chat_id in ws_chats:
                     answer = pro
                     try:
                         tts = gTTS(answer, tld="com", lang=lan[0])
                         tts.save("results.mp3")
-                    except AssertionError:
-                        return
-                    except ValueError:
-                        return
-                    except RuntimeError:
+                    except (AssertionError, ValueError, RuntimeError):
                         return
                     except gTTSError:
                         return

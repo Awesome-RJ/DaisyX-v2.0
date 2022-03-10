@@ -17,8 +17,8 @@ from DaisyX.services.pyrogram import pbot
 @admins_only
 async def hmm(_, message):
     global daisy_chats
-    if not "can_change_info" in (
-        await member_permissions(message.chat.id, message.from_user.id)
+    if "can_change_info" not in await member_permissions(
+        message.chat.id, message.from_user.id
     ):
         await message.reply_text("**You don't have enough permissions**")
         return
@@ -29,7 +29,7 @@ async def hmm(_, message):
         return
     status = message.text.split(None, 1)[1]
     message.chat.id
-    if status == "ON" or status == "on" or status == "On":
+    if status in ["ON", "on", "On"]:
         lel = await edit_or_reply(message, "`Processing...`")
         lol = add_chat(int(message.chat.id))
         if not lol:
@@ -39,7 +39,7 @@ async def hmm(_, message):
             f"URL Block Successfully Added For Users In The Chat {message.chat.id}"
         )
 
-    elif status == "OFF" or status == "off" or status == "Off":
+    elif status in ["OFF", "off", "Off"]:
         lel = await edit_or_reply(message, "`Processing...`")
         Escobar = remove_chat(int(message.chat.id))
         if not Escobar:
@@ -60,11 +60,16 @@ async def hmm(_, message):
 async def hi(client, message):
     if not get_session(int(message.chat.id)):
         message.continue_propagation()
-    if not len(await member_permissions(message.chat.id, message.from_user.id)) < 1:
+    if (
+        len(await member_permissions(message.chat.id, message.from_user.id))
+        >= 1
+    ):
         message.continue_propagation()
     if len(await member_permissions(message.chat.id, BOT_ID)) < 1:
         message.continue_propagation()
-    if not "can_delete_messages" in (await member_permissions(message.chat.id, BOT_ID)):
+    if "can_delete_messages" not in await member_permissions(
+        message.chat.id, BOT_ID
+    ):
         sedlyf = await message.reply_text(
             "**I don't have enough permissions to delete messages here**"
         )

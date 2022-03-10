@@ -17,10 +17,7 @@ async def _(event):
     prefix = event.text.split()
     if prefix[0] == "/afk":
         cmd = event.text[len("/afk ") :]
-        if cmd is not None:
-            reason = cmd
-        else:
-            reason = ""
+        reason = cmd if cmd is not None else ""
         firsname = sender.first_name
         # print(reason)
         start_time = time.time()
@@ -54,11 +51,9 @@ async def _(event):
             for (ent, txt) in event.get_entities_text():
                 if ent.offset != 0:
                     break
-                if isinstance(ent, types.MessageEntityMention):
-                    pass
-                elif isinstance(ent, types.MessageEntityMentionName):
-                    pass
-                else:
+                if not isinstance(
+                    ent, types.MessageEntityMention
+                ) and not isinstance(ent, types.MessageEntityMentionName):
                     return
                 c = txt
                 a = c.split()[0]
@@ -72,29 +67,25 @@ async def _(event):
     if sender == userid:
         return
 
-    if event.is_group:
-        pass
-    else:
+    if not event.is_group:
         return
     if sql.is_afk(userid):
         user = sql.check_afk_status(userid)
+        etime = user.start_time
         if not user.reason:
-            etime = user.start_time
             elapsed_time = time.time() - float(etime)
             final = time.strftime("%Hh: %Mm: %Ss", time.gmtime(elapsed_time))
             fst_name = "User"
             res = "**{} is AFK !**\n\n**Last seen**: {}".format(fst_name, final)
 
-            await event.reply(res, parse_mode="markdown")
         else:
-            etime = user.start_time
             elapsed_time = time.time() - float(etime)
             final = time.strftime("%Hh: %Mm: %Ss", time.gmtime(elapsed_time))
             fst_name = "This user"
             res = "**{} is AFK !**\n\n**He said to me that**: {}\n\n**Last seen**: {}".format(
                 fst_name, user.reason, final
             )
-            await event.reply(res, parse_mode="markdown")
+        await event.reply(res, parse_mode="markdown")
     userid = ""  # after execution
     let = ""  # after execution
 

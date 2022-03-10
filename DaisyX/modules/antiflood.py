@@ -67,10 +67,11 @@ class AntifloodEnforcer(BaseMiddleware):
         data.count += 1
 
         # check exceeding
-        if data.count >= database["count"]:
-            if await self.do_action(message, database):
-                self.reset_flood(message)
-                return True
+        if data.count >= database["count"] and await self.do_action(
+            message, database
+        ):
+            self.reset_flood(message)
+            return True
 
         self.insert_flood(data, message, database)
         return False
@@ -78,9 +79,9 @@ class AntifloodEnforcer(BaseMiddleware):
     @classmethod
     def is_message_valid(cls, message) -> bool:
         _pre = [ContentType.NEW_CHAT_MEMBERS, ContentType.LEFT_CHAT_MEMBER]
-        if message.content_type in _pre:
-            return False
-        elif message.chat.type in (ChatType.PRIVATE,):
+        if message.content_type in _pre or message.chat.type in (
+            ChatType.PRIVATE,
+        ):
             return False
         return True
 
@@ -118,7 +119,7 @@ class AntifloodEnforcer(BaseMiddleware):
 
     @classmethod
     async def do_action(cls, message: Message, database: dict):
-        action = database["action"] if "action" in database else "ban"
+        action = database.get("action", "ban")
 
         if action == "ban":
             return await ban_user(message.chat.id, message.from_user.id)
@@ -212,13 +213,9 @@ async def antiflood_expire_proc(
             await get_data.reset_cache(chat["chat_id"])
             kw = {"count": data}
             if time is not None:
-                kw.update(
-                    {
-                        "time": format_timedelta(
+                kw["time"] = format_timedelta(
                             parsed_time, locale=strings["language_info"]["babel"]
                         )
-                    }
-                )
             await message.reply(
                 strings[
                     "setup_success" if time is not None else "setup_success:no_exp"

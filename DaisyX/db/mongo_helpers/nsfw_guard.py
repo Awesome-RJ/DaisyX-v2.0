@@ -12,13 +12,9 @@ def rm_chat(chat_id):
 
 
 def get_all_nsfw_chats():
-    lol = list(nsfw.find({}))
-    return lol
+    return list(nsfw.find({}))
 
 
 def is_chat_in_db(chat_id):
     k = nsfw.find_one({"chat_id": chat_id})
-    if k:
-        return True
-    else:
-        return False
+    return bool(k)

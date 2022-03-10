@@ -56,11 +56,8 @@ async def _(event):
         return
     if event.is_private:
         return
-    if event.is_group:
-        if await can_change_info(message=event):
-            pass
-        else:
-            return
+    if event.is_group and not await can_change_info(message=event):
+        return
     chat = event.chat
     urls = event.text.split(None, 1)
     if len(urls) > 1:
@@ -71,20 +68,21 @@ async def _(event):
         for uri in to_blacklist:
             extract_url = tldextract.extract(uri)
             if extract_url.domain and extract_url.suffix:
-                blacklisted.append(extract_url.domain + "." + extract_url.suffix)
-                urlsql.blacklist_url(
-                    chat.id, extract_url.domain + "." + extract_url.suffix
-                )
+                blacklisted.append(f'{extract_url.domain}.{extract_url.suffix}')
+                urlsql.blacklist_url(chat.id, f'{extract_url.domain}.{extract_url.suffix}')
 
         if len(to_blacklist) == 1:
             extract_url = tldextract.extract(to_blacklist[0])
             if extract_url.domain and extract_url.suffix:
                 await event.reply(
                     "Added <code>{}</code> domain to the blacklist!".format(
-                        html.escape(extract_url.domain + "." + extract_url.suffix)
+                        html.escape(
+                            f'{extract_url.domain}.{extract_url.suffix}'
+                        )
                     ),
                     parse_mode="html",
                 )
+
             else:
                 await event.reply("You are trying to blacklist an invalid url")
         else:
@@ -104,11 +102,8 @@ async def _(event):
         return
     if event.is_private:
         return
-    if event.is_group:
-        if await can_change_info(message=event):
-            pass
-        else:
-            return
+    if event.is_group and not await can_change_info(message=event):
+        return
     chat = event.chat
     urls = event.text.split(None, 1)
 
@@ -119,8 +114,9 @@ async def _(event):
         for uri in to_unblacklist:
             extract_url = tldextract.extract(uri)
             success = urlsql.rm_url_from_blacklist(
-                chat.id, extract_url.domain + "." + extract_url.suffix
+                chat.id, f'{extract_url.domain}.{extract_url.suffix}'
             )
+
             if success:
                 unblacklisted += 1
 
@@ -168,7 +164,7 @@ async def on_url_message(event):
         if isinstance(ent, types.MessageEntityUrl):
             url = txt
             extract_url = tldextract.extract(url)
-            extracted_domains.append(extract_url.domain + "." + extract_url.suffix)
+            extracted_domains.append(f'{extract_url.domain}.{extract_url.suffix}')
     for url in urlsql.get_blacklisted_urls(chat.id):
         if url in extracted_domains:
             try:
@@ -183,11 +179,8 @@ async def _(event):
         return
     if event.is_private:
         return
-    if event.is_group:
-        if await can_change_info(message=event):
-            pass
-        else:
-            return
+    if event.is_group and not await can_change_info(message=event):
+        return
     chat = event.chat
     base_string = "Current <b>blacklisted</b> domains:\n"
     blacklisted = urlsql.get_blacklisted_urls(chat.id)

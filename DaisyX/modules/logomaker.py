@@ -24,10 +24,10 @@ from DaisyX.services.pyrogram import pbot
 
 
 def download_images(images):
-    count = 0
     print(f"Total {len(images)} Image Found!")
     if len(images) != 0:
-        for i, image in enumerate(images):
+        count = 0
+        for image in images:
             try:
                 image_link = image["data-srcset"]
             except:

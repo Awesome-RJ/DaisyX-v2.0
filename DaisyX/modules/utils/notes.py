@@ -56,11 +56,7 @@ def tparse_ent(ent, text, as_html=True):
     if sys.maxunicode == 0xFFFF:
         return text[offset : offset + length]
 
-    if not isinstance(text, bytes):
-        entity_text = text.encode("utf-16-le")
-    else:
-        entity_text = text
-
+    entity_text = text if isinstance(text, bytes) else text.encode("utf-16-le")
     entity_text = entity_text[offset * 2 : (offset + length) * 2].decode("utf-16-le")
 
     if etype == "bold":
@@ -99,11 +95,7 @@ def get_parsed_msg(message):
     text = message.caption or message.text
 
     mode = get_msg_parse(text)
-    if mode == "html":
-        as_html = True
-    else:
-        as_html = False
-
+    as_html = mode == "html"
     entities = message.caption_entities or message.entities
 
     if not entities:
@@ -120,11 +112,9 @@ def get_parsed_msg(message):
 
         if sys.maxunicode == 0xFFFF:
             part = text[offset : entity.offset]
-            result += part + entity_text
         else:
             part = text[offset * 2 : entity.offset * 2].decode("utf-16-le")
-            result += part + entity_text
-
+        result += part + entity_text
         offset = entity.offset + entity.length
 
     if sys.maxunicode == 0xFFFF:
@@ -166,22 +156,19 @@ def parse_button(data, name):
     args = raw_button[1]
 
     if action in BUTTONS:
-        text = f"\n[{name}](btn{action}:{args}*!repl!*)"
+        return f"\n[{name}](btn{action}:{args}*!repl!*)"
     else:
-        if args:
-            text = f"\n[{name}].(btn{action}:{args})"
-        else:
-            text = f"\n[{name}].(btn{action})"
-
-    return text
+        return (
+            f"\n[{name}].(btn{action}:{args})"
+            if args
+            else f"\n[{name}].(btn{action})"
+        )
 
 
 def get_reply_msg_btns_text(message):
     text = ""
     for column in message.reply_markup.inline_keyboard:
-        btn_num = 0
-        for btn in column:
-            btn_num += 1
+        for btn_num, btn in enumerate(column, start=1):
             name = btn["text"]
 
             if "url" in btn:
@@ -194,10 +181,12 @@ def get_reply_msg_btns_text(message):
             elif "callback_data" in btn:
                 text += parse_button(btn["callback_data"], name)
 
-            if btn_num > 1:
-                text = text.replace("*!repl!*", ":same")
-            else:
-                text = text.replace("*!repl!*", "")
+            text = (
+                text.replace("*!repl!*", ":same")
+                if btn_num > 1
+                else text.replace("*!repl!*", "")
+            )
+
     return text
 
 
@@ -232,7 +221,7 @@ async def get_parsed_note_list(message, allow_reply_message=True, split_args=1):
         text, note["parse_mode"] = get_parsed_msg(message.reply_to_message)
         # Get parsed origin msg text
         text += " "
-        to_split = "".join([" " + q for q in get_args(message)[:split_args]])
+        to_split = "".join([f" {q}" for q in get_args(message)[:split_args]])
         if not to_split:
             to_split = " "
         text += get_parsed_msg(message)[0].partition(message.get_command() + to_split)[
@@ -256,9 +245,9 @@ async def get_parsed_note_list(message, allow_reply_message=True, split_args=1):
         text, note["parse_mode"] = get_parsed_msg(message)
         if message.get_command() and message.get_args():
             # Remove cmd and arg from message's text
-            text = re.sub(message.get_command() + r"\s?", "", text, 1)
+            text = re.sub(f'{message.get_command()}\\s?', "", text, 1)
             if split_args > 0:
-                text = re.sub(re.escape(get_args(message)[0]) + r"\s?", "", text, 1)
+                text = re.sub(f'{re.escape(get_args(message)[0])}\\s?', "", text, 1)
         # Check on attachment
         if msg_file := await get_msg_file(message):
             note["file"] = msg_file
@@ -277,17 +266,13 @@ async def get_parsed_note_list(message, allow_reply_message=True, split_args=1):
 async def t_unparse_note_item(
     message, db_item, chat_id, noformat=None, event=None, user=None
 ):
-    text = db_item["text"] if "text" in db_item else ""
-
-    file_id = None
     preview = None
 
+    text = db_item["text"] if "text" in db_item else ""
     if not user:
         user = message.from_user
 
-    if "file" in db_item:
-        file_id = db_item["file"]["id"]
-
+    file_id = db_item["file"]["id"] if "file" in db_item else None
     if noformat:
         markup = None
         if "parse_mode" not in db_item or db_item["parse_mode"] == "none":
@@ -301,7 +286,7 @@ async def t_unparse_note_item(
         db_item["parse_mode"] = None
 
     else:
-        pm = True if message.chat.type == "private" else False
+        pm = message.chat.type == "private"
         text, markup = button_parser(chat_id, text, pm=pm)
 
         if not text and not file_id:
@@ -368,7 +353,7 @@ def button_parser(chat_id, texts, pm=False, aio=False, row_width=None):
             argument = raw_button[3][1:].lower().replace("`", "")
         elif action in ("#"):
             argument = raw_button[2]
-            print(raw_button[2])
+            print(argument)
         else:
             argument = ""
 
@@ -377,27 +362,38 @@ def button_parser(chat_id, texts, pm=False, aio=False, row_width=None):
             string = f"{cb}_{argument}_{chat_id}" if argument else f"{cb}_{chat_id}"
             if aio:
                 start_btn = InlineKeyboardButton(
-                    name, url=f"https://t.me/{BOT_USERNAME}?start=" + string
+                    name, url=f"https://t.me/{BOT_USERNAME}?start={string}"
                 )
+
                 cb_btn = InlineKeyboardButton(name, callback_data=string)
             else:
-                start_btn = Button.url(
-                    name, f"https://t.me/{BOT_USERNAME}?start=" + string
-                )
+                start_btn = Button.url(name, f"https://t.me/{BOT_USERNAME}?start={string}")
                 cb_btn = Button.inline(name, string)
 
             if cb.endswith("sm"):
                 btn = cb_btn if pm else start_btn
-            elif cb.endswith("cb"):
+            elif not cb.endswith("sm") and cb.endswith("cb"):
                 btn = cb_btn
-            elif cb.endswith("start"):
+            elif (
+                not cb.endswith("sm")
+                and not cb.endswith("cb")
+                and cb.endswith("start")
+                or not cb.endswith("sm")
+                and not cb.endswith("cb")
+                and not cb.endswith("start")
+                and not cb.startswith("url")
+                and cb.endswith("rules")
+            ):
                 btn = start_btn
-            elif cb.startswith("url"):
+            elif (
+                not cb.endswith("sm")
+                and not cb.endswith("cb")
+                and not cb.endswith("start")
+                and cb.startswith("url")
+            ):
                 # Workaround to make URLs case-sensitive TODO: make better
                 argument = raw_button[3][1:].replace("`", "") if raw_button[3] else ""
                 btn = Button.url(name, argument)
-            elif cb.endswith("rules"):
-                btn = start_btn
         elif action == "url":
             argument = raw_button[3][1:].replace("`", "") if raw_button[3] else ""
             if argument[0] == "/" and argument[1] == "/":
@@ -419,11 +415,10 @@ def button_parser(chat_id, texts, pm=False, aio=False, row_width=None):
         if btn:
             if aio:
                 buttons.insert(btn) if raw_button[4] else buttons.add(btn)
+            elif len(buttons) < 1 and raw_button[4]:
+                buttons.add(btn) if aio else buttons.append([btn])
             else:
-                if len(buttons) < 1 and raw_button[4]:
-                    buttons.add(btn) if aio else buttons.append([btn])
-                else:
-                    buttons[-1].append(btn) if raw_button[4] else buttons.append([btn])
+                buttons[-1].append(btn) if raw_button[4] else buttons.append([btn])
 
     if not aio and len(buttons) == 0:
         buttons = None

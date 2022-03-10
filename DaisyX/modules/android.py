@@ -236,7 +236,7 @@ async def check(message):
         await message.reply(m)
         return
 
-    model = "sm-" + temp if not temp.upper().startswith("SM-") else temp
+    model = temp if temp.upper().startswith("SM-") else f"sm-{temp}"
     async with httpx.AsyncClient(http2=True) as http:
         fota = await http.get(
             f"http://fota-cloud-dn.ospserver.net/firmware/{csc.upper()}/{model.upper()}/version.xml"
@@ -322,10 +322,10 @@ async def orangefox(message):
     except BaseException:
         build_type = ""
 
-    if build_type == "":
+    if not build_type:
         build_type = "stable"
 
-    if codename == "devices" or codename == "":
+    if codename in {"devices", ""}:
         reply_text = (
             f"<b>OrangeFox Recovery <i>{build_type}</i> is currently avaible for:</b>"
         )
@@ -350,18 +350,20 @@ async def orangefox(message):
         if build_type == "stable":
             reply_text += (
                 "\n\n"
-                + f"To get the latest Stable release use <code>/ofox (codename)</code>, for example: <code>/ofox raphael</code>"
+                + "To get the latest Stable release use <code>/ofox (codename)</code>, for example: <code>/ofox raphael</code>"
             )
+
         elif build_type == "beta":
             reply_text += (
                 "\n\n"
-                + f"To get the latest Beta release use <code>/ofox (codename) beta</code>, for example: <code>/ofox raphael beta</code>"
+                + "To get the latest Beta release use <code>/ofox (codename) beta</code>, for example: <code>/ofox raphael beta</code>"
             )
+
         await message.reply(reply_text)
         return
 
     async with httpx.AsyncClient(http2=True) as http:
-        data = await http.get(API_HOST + f"devices/get?codename={codename}")
+        data = await http.get(f"{API_HOST}devices/get?codename={codename}")
         device = json.loads(data.text)
         await http.aclose()
     if data.status_code == 404:
@@ -389,7 +391,7 @@ async def orangefox(message):
             file_id = build["_id"]
 
     async with httpx.AsyncClient(http2=True) as http:
-        data = await http.get(API_HOST + f"releases/get?_id={file_id}")
+        data = await http.get(f"{API_HOST}releases/get?_id={file_id}")
         release = json.loads(data.text)
         await http.aclose()
     if data.status_code == 404:

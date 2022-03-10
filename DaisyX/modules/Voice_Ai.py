@@ -44,11 +44,10 @@ async def is_register_admin(chat, user):
 async def _(event):
     if event.fwd_from:
         return
-    if event.is_group:
-        if await is_register_admin(event.input_chat, event.message.sender_id):
-            pass
-        else:
-            return
+    if event.is_group and not await is_register_admin(
+        event.input_chat, event.message.sender_id
+    ):
+        return
     if not event.reply_to_msg_id:
         i = event.pattern_match.group(1)
         appid = WOLFRAM_ID
@@ -59,7 +58,7 @@ async def _(event):
                 "Sorry, Daisy's AI systems could't recognized your question.."
             )
             return
-        await event.reply(f"**{i}**\n\n" + res.text, parse_mode="markdown")
+        await event.reply(f"**{i}**\n\n{res.text}", parse_mode="markdown")
 
     if event.reply_to_msg_id:
         previous_message = await event.get_reply_message()
@@ -76,11 +75,12 @@ async def _(event):
             }
             data = open(required_file_name, "rb").read()
             response = requests.post(
-                IBM_WATSON_CRED_URL + "/v1/recognize",
+                f'{IBM_WATSON_CRED_URL}/v1/recognize',
                 headers=headers,
                 data=data,
                 auth=("apikey", IBM_WATSON_CRED_PASSWORD),
             )
+
             r = response.json()
             if "results" in r:
                 # process the json to appropriate string format
@@ -104,35 +104,7 @@ async def _(event):
                     try:
                         tts = gTTS(answer, tld="com", lang="en")
                         tts.save("results.mp3")
-                    except AssertionError:
-                        return
-                    except ValueError:
-                        return
-                    except RuntimeError:
-                        return
-                    except gTTSError:
-                        return
-                    with open("results.mp3", "r"):
-                        await tbot.send_file(
-                            event.chat_id,
-                            "results.mp3",
-                            voice_note=True,
-                            reply_to=event.id,
-                        )
-                    os.remove("results.mp3")
-                    os.remove(required_file_name)
-                elif (
-                    transcript_response == "Wolfram Alpha did not understand your input"
-                ):
-                    try:
-                        answer = "Sorry, Daisy's AI system can't understand you.."
-                        tts = gTTS(answer, tld="com", lang="en")
-                        tts.save("results.mp3")
-                    except AssertionError:
-                        return
-                    except ValueError:
-                        return
-                    except RuntimeError:
+                    except (AssertionError, ValueError, RuntimeError):
                         return
                     except gTTSError:
                         return
@@ -157,9 +129,7 @@ async def howdoi(event):
     if event.is_group:
         if await is_register_admin(event.input_chat, event.message.sender_id):
             pass
-        elif event.chat_id == iid and event.sender_id == userss:
-            pass
-        else:
+        elif event.chat_id != iid or event.sender_id != userss:
             return
 
     str = event.pattern_match.group(1)

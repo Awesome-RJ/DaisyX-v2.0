@@ -28,14 +28,15 @@ from DaisyX.services.telethon import tbot as tgbot
 
 @tgbot.on(events.InlineQuery)
 async def inline_handler(event):
-    builder = event.builder
     query = event.text
     if not query:
+        builder = event.builder
         results = builder.article(
             title="Hello, I'm Daisy! Touch for help!",
-            text=f"Wonder What All You Can Do With Me? Click Below To Know More.",
+            text="Wonder What All You Can Do With Me? Click Below To Know More.",
             buttons=custom.Button.inline("Explore!", data="explore"),
         )
+
         await event.answer([results])
         return
 
@@ -84,7 +85,7 @@ async def inline_id_handler(event: events.InlineQuery.Event):
     testinput = event.pattern_match.group(1)
     starkisnub = urllib.parse.quote_plus(testinput)
     results = []
-    sedlyf = "https://api.sumanjay.cf/torrent/?query=" + starkisnub
+    sedlyf = f"https://api.sumanjay.cf/torrent/?query={starkisnub}"
     try:
         okpro = requests.get(url=sedlyf, timeout=10).json()
     except:
@@ -243,11 +244,11 @@ async def inline_id_handler(event: events.InlineQuery.Event):
     try:
         page = page[0]
         page = page.replace("page=", "")
-        match = match.replace("page=" + page[0], "")
+        match = match.replace(f"page={page[0]}", "")
     except IndexError:
         page = 1
 
-    search_args = (str(match), int(page))
+    search_args = str(match), page
     gsearch = GoogleSearch()
     gresults = await gsearch.async_search(*search_args)
     for i in range(len(gresults["links"])):
@@ -295,8 +296,6 @@ async def inline_id_handler(event: events.InlineQuery.Event):
                     ],
                 )
             )
-        else:
-            pass
     await event.answer(results)
 
 
@@ -342,7 +341,7 @@ Year: {}""".format(
         lul_k = builder.photo(file=img, text=output_str)
         await event.answer([lul_k])
     else:
-        resultm = builder.article(title="- No Results :/ -", text=f"No Results Found !")
+        resultm = builder.article(title="- No Results :/ -", text="No Results Found !")
         await event.answer([resultm])
 
 

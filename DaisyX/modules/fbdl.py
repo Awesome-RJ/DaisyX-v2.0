@@ -35,7 +35,7 @@ def download_video(quality, url, filename):
     file_size_request = requests.get(video_url, stream=True)
     int(file_size_request.headers["Content-Length"])
     block_size = 1024
-    with open(filename + ".mp4", "wb") as f:
+    with open(f'{filename}.mp4', "wb") as f:
         for data in file_size_request.iter_content(block_size):
             f.write(data)
     print("\nVideo downloaded successfully.")
@@ -65,18 +65,16 @@ async def _(event):
         _hd = re.search("hd_src:null", html)
         _sd = re.search("sd_src:null", html)
 
-        list = []
         _thelist = [_qualityhd, _qualitysd, _hd, _sd]
-        for id, val in enumerate(_thelist):
-            if val != None:
-                list.append(id)
+        list = [id for id, val in enumerate(_thelist) if val != None]
         filename = datetime.strftime(datetime.now(), "%Y-%m-%d-%H-%M-%S")
 
         main(url, filename)
         await event.reply("Video Downloaded Successfully. Starting To Upload.")
 
         kk = f"{filename}.mp4"
-        caption = f"Facebook Video downloaded Successfully by @DaisyXBot.\nSay hi to devs @DaisySupport_Official."
+        caption = "Facebook Video downloaded Successfully by @DaisyXBot.\\nSay hi to devs @DaisySupport_Official."
+
 
         await tbot.send_file(
             event.chat_id,

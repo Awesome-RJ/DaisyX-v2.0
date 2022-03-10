@@ -54,11 +54,6 @@ for i in data:
     if new_t := _convert_time(time):
         updated_list.append(UpdateOne({"_id": i["_id"]}, {"$set": {"time": new_t}}))
         changed += 1
-    else:
-        # deleted += 1
-        # updated_list.append(DeleteOne({'_id': i['_id']}))
-        pass
-
 if updated_list:
     log.info("Updating database...")
     mongodb["warnmode"].bulk_write(updated_list, ordered=False)

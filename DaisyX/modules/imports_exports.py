@@ -44,7 +44,7 @@ class ImportFileWait(StatesGroup):
 @get_strings_dec("imports_exports")
 async def export_chat_data(message, chat, strings):
     chat_id = chat["chat_id"]
-    key = "export_lock:" + str(chat_id)
+    key = f"export_lock:{str(chat_id)}"
     if redis.get(key) and message.from_user.id not in OPERATORS:
         ttl = format_timedelta(
             timedelta(seconds=redis.ttl(key)), strings["language_info"]["babel"]
@@ -111,7 +111,7 @@ async def import_state(message, state=None, **kwargs):
 @get_strings_dec("imports_exports")
 async def import_fun(message, document, chat, strings):
     chat_id = chat["chat_id"]
-    key = "import_lock:" + str(chat_id)
+    key = f"import_lock:{str(chat_id)}"
     if redis.get(key) and message.from_user.id not in OPERATORS:
         ttl = format_timedelta(
             timedelta(seconds=redis.ttl(key)), strings["language_info"]["babel"]

@@ -22,10 +22,8 @@ log.info("Starting updating all filters...")
 
 all_filters = mongodb.filters.find({})
 all_filters_count = all_filters.count()
-counter = 0
 changed_filters = 0
-for item in all_filters:
-    counter += 1
+for counter, item in enumerate(all_filters, start=1):
     log.info(f"Updating {counter} of {all_filters_count}...")
 
     if "note" in item:
@@ -35,5 +33,5 @@ for item in all_filters:
         mongodb.notes_v2.replace_one({"_id": item["_id"]}, item)
 
 log.info("Update done!")
-log.info("Modified filters - " + str(changed_filters))
-log.info("Unchanged filters - " + str(all_filters_count - changed_filters))
+log.info(f"Modified filters - {str(changed_filters)}")
+log.info(f"Unchanged filters - {str(all_filters_count - changed_filters)}")
